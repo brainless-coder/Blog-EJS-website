@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const _ = require('lodash');
 const port = 3000;
 
 
@@ -30,11 +31,16 @@ app.get('/', function(req, res) {
 
 
 app.get('/posts/:postName', (req, res) => {
-    const postName = req.params.postName;
+    const requestedTitle = _.lowerCase(req.params.postName);
 
     posts.forEach( (post) => {
-        if (post.title === postName) {
-            console.log('Match Found');
+        const storedTitle = _.lowerCase(post.title);
+
+        if (storedTitle === requestedTitle) {
+            res.render("post", {
+                postTitle: post.title,
+                postBody: post.body
+            });
         }
     });
 });
