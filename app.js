@@ -1,7 +1,25 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const _ = require('lodash');
+const mongoose = require('mongoose');
 const port = 3000;
+
+// DB connection URL
+mongoose.connect("mongodb://localhost:27017/blogDB", {useNewUrlParser: true, useUnifiedTopology: true});
+
+// Create schema for posts
+const blogSchema = {
+    title: {
+        type: String,
+        required: [true, "Blog Title not specified"]
+    },
+    content: {
+        type: String,
+        required: [true, "No content in the blog"]
+    }
+};
+
+// make a collection for blogs
+const Blog = mongoose.model("Blog", blogSchema);
 
 
 const homeStartingContent = "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing.";
@@ -18,31 +36,28 @@ app.use(express.static("public"));
 app.use(bodyParser.urlencoded({extended: true}));
 
 
-let posts = [];
-
-
 app.get('/', function(req, res) {
-    res.render('home', {
-        startingContent: homeStartingContent, 
-        posts: posts
+
+    Blog.find({}, function(err, blogs) {
+        res.render('home', {
+            startingContent: homeStartingContent, 
+            posts: blogs
+        });
     });
 
 });
 
 
-app.get('/posts/:postName', (req, res) => {
-    const requestedTitle = _.lowerCase(req.params.postName);
+app.get('/posts/:postID', (req, res) => {
+    const requestedBlogID = req.params.postID;
 
-    posts.forEach( (post) => {
-        const storedTitle = _.lowerCase(post.title);
-
-        if (storedTitle === requestedTitle) {
-            res.render("post", {
-                postTitle: post.title,
-                postBody: post.body
-            });
-        }
+    Blog.findOne({_id: requestedBlogID}, (err, blog) => {
+        res.render("post", {
+            postTitle: blog.title,
+            postBody: blog.content
+        });
     });
+
 });
 
 
@@ -61,13 +76,17 @@ app.get('/compose', (req, res) => {
 });
 
 app.post('/compose', (req, res) => {
-    const post = {
+    const post = new Blog({
         title: req.body.postTitle,
-        body: req.body.postBody
-    };
+        content: req.body.postBody
+    });
 
-    posts.push(post);
-    res.redirect('/');
+    post.save((err) => {
+        if (!err) {
+            res.redirect('/');
+        }
+    });
+
 });
 
 
